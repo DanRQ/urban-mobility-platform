@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: fct_daily_trip_metrics
+    description: "Daily Citi Bike usage metrics aggregated by trip date."
+    columns:
+      - name: trip_date
+        tests:
+          - not_null
+          - unique
+
+      - name: total_trips
+        tests:
+          - not_null

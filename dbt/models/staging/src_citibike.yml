@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: citibike_raw
+    schema: raw
+    tables:
+      - name: citibike_trips
+        description: "Raw Citi Bike trip records loaded by the Python ingestion pipeline."
+        columns:
+          - name: ride_id
+            tests:
+              - not_null
+              - unique
+
+          - name: rideable_type
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ["classic_bike", "electric_bike", "docked_bike"]
+
+          - name: started_at
+            tests:
+              - not_null
+
+          - name: ended_at
+            tests:
+              - not_null
+
+          - name: member_casual
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ["member", "casual"]
