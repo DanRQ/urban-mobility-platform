@@ -18,7 +18,15 @@ data/processed/*
 # dbt artifacts, used later
 dbt/target/
 dbt/logs/
+!dbt/tests/.gitkeep
 
 # IDE and OS
 .vscode/
 .DS_Store
+
+# Airflow artifacts
+airflow/logs/
+airflow/dags/__pycache__/
+!airflow/config/.gitkeep
+!airflow/plugins/.gitkeep
+!airflow/logs/.gitkeep

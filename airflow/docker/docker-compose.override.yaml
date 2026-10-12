@@ -1,0 +1,53 @@
+services:
+  airflow-scheduler:
+    volumes:
+      - ../../airflow/dags:/opt/airflow/dags
+      - ../../airflow/logs:/opt/airflow/logs
+      - ../../airflow/plugins:/opt/airflow/plugins
+      - ../../src:/opt/airflow/src
+      - ../../data:/opt/airflow/data
+      - ../../dbt:/opt/airflow/dbt
+    networks:
+      - default
+      - urban-mobility-network
+
+  airflow-apiserver:
+    volumes:
+      - ../../airflow/dags:/opt/airflow/dags
+      - ../../airflow/logs:/opt/airflow/logs
+      - ../../airflow/plugins:/opt/airflow/plugins
+      - ../../src:/opt/airflow/src
+      - ../../data:/opt/airflow/data
+      - ../../dbt:/opt/airflow/dbt
+    networks:
+      - default
+      - urban-mobility-network
+
+  airflow-dag-processor:
+    volumes:
+      - ../../airflow/dags:/opt/airflow/dags
+      - ../../airflow/logs:/opt/airflow/logs
+      - ../../airflow/plugins:/opt/airflow/plugins
+      - ../../src:/opt/airflow/src
+      - ../../data:/opt/airflow/data
+      - ../../dbt:/opt/airflow/dbt
+    networks:
+      - default
+      - urban-mobility-network
+
+  airflow-worker:
+    volumes:
+      - ../../airflow/dags:/opt/airflow/dags
+      - ../../airflow/logs:/opt/airflow/logs
+      - ../../airflow/plugins:/opt/airflow/plugins
+      - ../../src:/opt/airflow/src
+      - ../../data:/opt/airflow/data
+      - ../../dbt:/opt/airflow/dbt
+    networks:
+      - default
+      - urban-mobility-network
+
+
+networks:
+  urban-mobility-network:
+    external: true
