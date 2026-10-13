@@ -31,7 +31,19 @@ cleaned_trips as (
 
         cast(started_at as date) as trip_date,
         extract(hour from started_at) as start_hour,
-        extract(dow from started_at) as start_day_of_week
+        extract(dow from started_at) as start_day_of_week,
+        
+        round(
+            6371 * 2 * asin(
+                sqrt(
+                    power(sin(radians(end_lat - start_lat) / 2), 2)
+                    + cos(radians(start_lat))
+                    * cos(radians(end_lat))
+                    * power(sin(radians(end_lng - start_lng) / 2), 2)
+                )
+            )::numeric,
+            3
+        ) as stations_distance_km
 
     from source_trips
 

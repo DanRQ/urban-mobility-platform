@@ -1,0 +1,204 @@
+version: 2
+
+models:
+  - name: fct_member_type_metrics
+    description: >
+      Daily Citi Bike trip metrics segmented by rider type.
+      Each row represents one trip date and one rider type.
+
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(trip_date::text || '-' || rider_type)"
+
+    columns:
+      - name: trip_date
+        description: Date when the trips started.
+        data_tests:
+          - not_null
+
+      - name: rider_type
+        description: Type of Citi Bike rider.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["member", "casual"]
+
+      - name: total_trips
+        description: Total valid trips for the date and rider type.
+        data_tests:
+          - not_null
+
+      - name: avg_trip_duration_minutes
+        description: Average trip duration in minutes for the date and rider type.
+        data_tests:
+          - not_null
+
+      - name: min_trip_duration_minutes
+        description: Minimum trip duration in minutes for the date and rider type.
+        data_tests:
+          - not_null
+
+      - name: max_trip_duration_minutes
+        description: Maximum trip duration in minutes for the date and rider type.
+        data_tests:
+          - not_null
+
+  - name: fct_bike_type_metrics
+    description: >
+      Daily Citi Bike trip metrics segmented by bike type.
+      Each row represents one trip date and one bike type.
+
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "(trip_date::text || '-' || bike_type)"
+
+    columns:
+      - name: trip_date
+        description: Date when the trips started.
+        data_tests:
+          - not_null
+
+      - name: bike_type
+        description: Type of bike used for the trip.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["classic_bike", "electric_bike", "docked_bike"]
+
+      - name: total_trips
+        description: Total valid trips for the date and bike type.
+        data_tests:
+          - not_null
+
+      - name: avg_trip_duration_minutes
+        description: Average trip duration in minutes for the date and bike type.
+        data_tests:
+          - not_null
+
+      - name: min_trip_duration_minutes
+        description: Minimum trip duration in minutes for the date and bike type.
+        data_tests:
+          - not_null
+
+      - name: max_trip_duration_minutes
+        description: Maximum trip duration in minutes for the date and bike type.
+        data_tests:
+          - not_null
+
+  - name: fct_route_daily_metrics
+    description: "Daily Citi Station Metrics aggregated by station and date."
+    columns:
+      - name: station_name
+        tests:
+          - not_null
+
+      - name: trip_date
+        tests:
+          - not_null
+      
+      - name: start_station_count
+        tests:
+          - not_null
+
+      - name: end_station_count
+        tests:
+          - not_null
+
+  - name: fct_station_trip_metrics
+    description: "Trip metrics aggregated by start station."
+    columns:
+      - name: start_station_id
+        tests:
+          - not_null
+
+      - name: start_station_name
+        tests:
+          - not_null
+
+      - name: distinct_trips
+        tests:
+          - not_null
+
+      - name: member_trips
+        tests:
+          - not_null
+
+      - name: casual_trips,
+        tests:
+          - not_null
+
+      - name: classic_bike_trips
+        tests:
+          - not_null
+
+      - name: electric_bike_trips
+        tests:
+          - not_null
+
+      - name: avg_trip_duration_minutes
+        tests:
+          - not_null
+
+  - name: fct_hourly_trip_metrics
+    description: "Hourly trip counts aggregated by trip date, weekday, and hour for member and casual rider segments."
+    columns:
+      - name: trip_date,
+        tests:
+          - not_null
+
+      - name: day_of_week
+        tests:
+          - not_null
+      
+      - name: start_hour
+        tests:
+          - not_null
+
+      - name: total_trips
+        tests:
+          - not_null
+
+
+      - name: member_trips
+        tests:
+          - not_null
+
+      - name: casual_trips
+        tests:
+          - not_null
+
+  - name: fct_daily_trip_metrics
+    description: "Daily Citi Bike usage metrics aggregated by trip date."
+    columns:
+      - name: trip_date
+        tests:
+          - not_null
+          - unique
+
+      - name: bike_type
+        tests:
+          - not_null
+
+      - name: avg_trip_duration_minutes
+        tests:
+          - not_null
+
+      - name: min_trip_duration_minutes
+        tests:
+          - not_null
+
+      - name: max_trip_duration_minutes
+        tests:
+          - not_null
+
+      - name: avg_trip_distance_km
+        tests:
+          - not_null
+
+      - name: total_trip_distance_km
+        tests:
+          - not_null
