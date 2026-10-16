@@ -11,13 +11,15 @@ EXTRACTED_BASE_DIR = "/opt/airflow/data/extracted"
 DBT_PROJECT_DIR = "/opt/airflow/dbt"
 
 
-
 @dag(
     dag_id="citibike_tripdata_pipeline",
     description="Monthly Citi Bike trip data pipeline with backfill support.",
     schedule="@monthly",
-    start_date=datetime(2014, 2, 1),
     catchup=False,
+    default_args = {
+        "retries": 3,
+        "retry_delay": timedelta(minutes=1),
+    },
     tags=["citibike", "batch", "postgres", "dbt", "backfill"],
 )
 def citibike_tripdata_pipeline():
@@ -25,6 +27,8 @@ def citibike_tripdata_pipeline():
 
     download_trips = BashOperator(
         task_id="download_trips",
+        retries=3,
+        retry_delay=timedelta(minutes=3),
         bash_command=(
             "set -euo pipefail; "
             "python /opt/airflow/src/download_trips.py "
@@ -71,6 +75,7 @@ def citibike_tripdata_pipeline():
             f"dbt test --project-dir {DBT_PROJECT_DIR} "
             f"--profiles-dir {DBT_PROJECT_DIR}"
         ),
+        retries=0
     )
 
     download_trips >> extract_trips >> load_trips >> dbt_run >> dbt_test
