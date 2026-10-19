@@ -30,3 +30,5 @@ airflow/dags/__pycache__/
 !airflow/config/.gitkeep
 !airflow/plugins/.gitkeep
 !airflow/logs/.gitkeep
+
+logs/*

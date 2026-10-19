@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import os
-from pathlib import Path
-
+import re
 import pandas as pd
+
+from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
@@ -14,8 +16,8 @@ load_dotenv()
 
 TABLE_NAME = "citibike_trips"
 SCHEMA_NAME = "raw"
-READ_CHUNK_SIZE = 10_000
-WRITE_CHUNK_SIZE = 10_000
+READ_CHUNK_SIZE = 3_000
+WRITE_CHUNK_SIZE = 3_000
 
 CSV_DTYPES = {
     "ride_id": "string",
@@ -33,6 +35,21 @@ CSV_DTYPES = {
 
 DATE_COLUMNS = ["started_at", "ended_at"]
 
+REQUIRED_COLUMNS = {
+    "ride_id",
+    "rideable_type",
+    "start_station_name",
+    "start_station_id",
+    "end_station_name",
+    "end_station_id",
+    "start_lat",
+    "start_lng",
+    "end_lat",
+    "end_lng",
+    "member_casual",
+    "started_at",
+    "ended_at",
+}
 
 def get_engine() -> Engine:
     user = os.environ["WAREHOUSE_USER"]
@@ -49,6 +66,35 @@ def ensure_raw_schema(engine: Engine) -> None:
     with engine.begin() as connection:
         connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA_NAME};"))
 
+def ensure_raw_table(engine: Engine) -> None:
+    create_table_sql = """
+        CREATE TABLE IF NOT EXISTS raw.citibike_trips (
+            ride_id TEXT,
+            rideable_type TEXT,
+            started_at TIMESTAMP,
+            ended_at TIMESTAMP,
+            start_station_name TEXT,
+            start_station_id TEXT,
+            end_station_name TEXT,
+            end_station_id TEXT,
+            start_lat DOUBLE PRECISION,
+            start_lng DOUBLE PRECISION,
+            end_lat DOUBLE PRECISION,
+            end_lng DOUBLE PRECISION,
+            member_casual TEXT,
+            source_month TEXT NOT NULL,
+            source_file TEXT NOT NULL,
+            loaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """
+    create_source_month_index_sql = """
+        CREATE INDEX IF NOT EXISTS idx_citibike_trips_source_month
+        ON raw.citibike_trips (source_month);
+    """
+    with engine.begin() as connection:
+        connection.execute(text(create_table_sql))
+        connection.execute(text(create_source_month_index_sql))
+
 
 def normalize_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
     dataframe.columns = (
@@ -60,16 +106,26 @@ def normalize_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
     )
     return dataframe
 
+def validate_required_columns(df: pd.DataFrame, source_file: str) -> None:
+    missing_columns = REQUIRED_COLUMNS - set(df.columns)
+
+    if missing_columns:
+        missing_columns_text = ", ".join(sorted(missing_columns))
+        available_columns_text = ", ".join(df.columns)
+
+        raise ValueError(
+            f"Invalid File: {source_file}. "
+            f"Missing mandatory columns: {missing_columns_text}. "
+            f"Columns found: {available_columns_text}."
+        )
 
 def delete_month_data(engine: Engine, month: str) -> None:
-    month_start = pd.to_datetime(month, format="%Y%m")
-    next_month_start = month_start + pd.offsets.MonthBegin(1)
+    source_month = month
 
     delete_sql = text(
         f"""
         DELETE FROM {SCHEMA_NAME}.{TABLE_NAME}
-        WHERE started_at >= :month_start
-          AND started_at < :next_month_start
+        WHERE source_month = :source_month
         """
     )
 
@@ -77,14 +133,12 @@ def delete_month_data(engine: Engine, month: str) -> None:
         connection.execute(
             delete_sql,
             {
-                "month_start": month_start.to_pydatetime(),
-                "next_month_start": next_month_start.to_pydatetime(),
+                "source_month": source_month,
             },
         )
 
     print(
         f"Existing rows removed for month {month}: "
-        f"{month_start.date()} to {next_month_start.date()}"
     )
 
 
@@ -94,7 +148,7 @@ def load_csv_file(
 ) -> int:
     csv_file = Path(csv_path)
     total_rows = 0
-
+    start_time = time
     for chunk_number, dataframe in enumerate(
         pd.read_csv(
             csv_file,
@@ -107,7 +161,12 @@ def load_csv_file(
         ),
         start=1,
     ):
+        validate_required_columns(dataframe, csv_path.name)
         dataframe = normalize_columns(dataframe)
+
+        dataframe["source_file"] = csv_path.name
+        dataframe["source_month"] = get_source_month(csv_path)
+        dataframe = dataframe.drop(columns=["loaded_at"], errors="ignore")
 
         dataframe.to_sql(
             name=TABLE_NAME,
@@ -133,6 +192,9 @@ def load_csv_file(
 
 def load_extracted_files(input_dir: str | Path, month: str) -> None:
     input_path = Path(input_dir)
+    started_at = datetime.now()
+
+    print(f"Load started at: {started_at:%Y-%m-%d %H:%M:%S}")
 
     if not input_path.exists():
         raise FileNotFoundError(f"Input directory not found: {input_path}")
@@ -144,6 +206,7 @@ def load_extracted_files(input_dir: str | Path, month: str) -> None:
 
     engine = get_engine()
     ensure_raw_schema(engine)
+    ensure_raw_table(engine)
     delete_month_data(engine, month)
 
     total_rows = 0
@@ -156,6 +219,9 @@ def load_extracted_files(input_dir: str | Path, month: str) -> None:
             engine=engine,
         )
 
+    finished_at = datetime.now()
+   
+    print(f"Load Finished at: {finished_at:%Y-%m-%d %H:%M:%S}")
     print(
         f"Load completed for {month}: "
         f"{total_rows:,} rows in {SCHEMA_NAME}.{TABLE_NAME}"
@@ -178,6 +244,21 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+def get_source_month(csv_path: Path) -> date:
+    match = re.search(r"(\d{4})[-_]?(\d{2})", csv_path.name)
+
+    if not match:
+        raise ValueError(
+            f"Could not identify year and month in filename: {csv_path.name}"
+        )
+
+    year, month = match.groups()
+
+    return datetime(
+        year=int(year),
+        month=int(month),
+        day=1,
+    ).date()
 
 if __name__ == "__main__":
     args = parse_args()

@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
-
 import requests
+from pathlib import Path
+from urllib.parse import urlparse
+
 
 
 BASE_URL = "https://s3.amazonaws.com/tripdata"
 
-
 def build_tripdata_url(month: str) -> str:
     return f"{BASE_URL}/{month}-citibike-tripdata.zip"
-
 
 def download_tripdata(
     month: str,
