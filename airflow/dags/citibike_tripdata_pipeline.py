@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from airflow.sdk import dag
 from airflow.providers.standard.operators.bash import BashOperator

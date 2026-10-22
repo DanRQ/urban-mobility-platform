@@ -148,7 +148,6 @@ def load_csv_file(
 ) -> int:
     csv_file = Path(csv_path)
     total_rows = 0
-    start_time = time
     for chunk_number, dataframe in enumerate(
         pd.read_csv(
             csv_file,
@@ -244,7 +243,7 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-def get_source_month(csv_path: Path) -> date:
+def get_source_month(csv_path: Path) -> str:
     match = re.search(r"(\d{4})[-_]?(\d{2})", csv_path.name)
 
     if not match:
@@ -254,11 +253,7 @@ def get_source_month(csv_path: Path) -> date:
 
     year, month = match.groups()
 
-    return datetime(
-        year=int(year),
-        month=int(month),
-        day=1,
-    ).date()
+    return f"{year}{month}"
 
 if __name__ == "__main__":
     args = parse_args()
