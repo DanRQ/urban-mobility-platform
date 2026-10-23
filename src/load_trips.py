@@ -141,8 +141,8 @@ def delete_month_data(engine: Engine, month: str) -> None:
             },
         )
 
-    print(
-        f"Existing rows removed for month {month}: "
+    logger.info("Existing rows removed for month %s: ",
+                month,
     )
 
 
@@ -151,7 +151,6 @@ def load_csv_file(
     engine: Engine,
 ) -> int:
     csv_file = Path(csv_path)
-    total_rows = 0
     source_month = get_source_month(csv_file)
 
     total_rows_read = 0
@@ -259,7 +258,9 @@ def load_extracted_files(input_dir: str | Path, month: str) -> None:
     total_rows = 0
 
     for csv_file in csv_files:
-        print(f"Loading file: {csv_file}")
+        logger.info("Loading file: {%s",
+                    csv_file,
+                    )
 
         total_rows += load_csv_file(
             csv_path=csv_file,
