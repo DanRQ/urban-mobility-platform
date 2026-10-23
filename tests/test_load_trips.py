@@ -15,23 +15,23 @@ from src.load_trips import (
     [
         (
             Path("data/extracted/202401/202401-citibike-tripdata_1.csv"),
-            datetime(year=int(2024),month=int(1),day=1,).date(),
+            "202401",
         ),
         (
             Path("data/extracted/202401/202401-citibike-tripdata_2.csv"),
-            datetime(year=int(2024),month=int(1),day=1,).date(),
+            "202401",
         ),
         (
             Path("data/extracted/202402/202402-citibike-tripdata_1.csv"),
-            datetime(year=int(2024),month=int(2),day=1,).date(),
+            "202402",
         ),
         (
             Path("data/extracted/202402/202402-citibike-tripdata_2.csv"),
-            datetime(year=int(2024),month=int(2),day=1,).date(),
+            "202402",
         ),
         (
             Path("data/extracted/202402/202402-citibike-tripdata_3.csv"),
-            datetime(year=int(2024),month=int(2),day=1,).date(),
+            "202402",
         ),
     ],
 )

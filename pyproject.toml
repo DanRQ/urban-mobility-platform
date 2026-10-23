@@ -1,0 +1,23 @@
+[project]
+name = "urban-mobility-platform"
+version = "0.1.0"
+description = "Batch data pipeline for Citi Bike trip data."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pandas>=3.0",
+    "sqlalchemy>=2.0,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "python-dotenv>=1.0,<2.0",
+    "requests>=2.3.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.8,<1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
