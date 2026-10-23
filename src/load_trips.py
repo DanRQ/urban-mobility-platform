@@ -4,6 +4,8 @@ import argparse
 import os
 import re
 import pandas as pd
+import logging
+import time
 
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +15,8 @@ from sqlalchemy.engine import Engine
 
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 TABLE_NAME = "citibike_trips"
 SCHEMA_NAME = "raw"
@@ -148,6 +152,19 @@ def load_csv_file(
 ) -> int:
     csv_file = Path(csv_path)
     total_rows = 0
+    source_month = get_source_month(csv_file)
+
+    total_rows_read = 0
+    total_rows_loaded = 0
+
+    file_start_time = time.perf_counter()
+
+    logger.info(
+        "Starting file load | month=%s | file=%s",
+        source_month,
+        csv_file.name,
+    )
+
     for chunk_number, dataframe in enumerate(
         pd.read_csv(
             csv_file,
@@ -160,11 +177,17 @@ def load_csv_file(
         ),
         start=1,
     ):
-        validate_required_columns(dataframe, csv_path.name)
-        dataframe = normalize_columns(dataframe)
+        chunk_start_time = time.perf_counter()
+        
+        rows_read = len(dataframe)
+        total_rows_read += rows_read
 
-        dataframe["source_file"] = csv_path.name
-        dataframe["source_month"] = get_source_month(csv_path)
+        dataframe = normalize_columns(dataframe)
+        validate_required_columns(dataframe, csv_file.name)
+
+
+        dataframe["source_file"] = csv_file.name
+        dataframe["source_month"] = source_month
         dataframe = dataframe.drop(columns=["loaded_at"], errors="ignore")
 
         dataframe.to_sql(
@@ -178,22 +201,47 @@ def load_csv_file(
         )
 
         loaded_rows = len(dataframe)
-        total_rows += loaded_rows
+        total_rows_loaded += loaded_rows
 
-        print(
-            f"{csv_file.name} | "
-            f"chunk {chunk_number} | "
-            f"{loaded_rows:,} rows loaded"
+        chunk_duration_seconds = time.perf_counter() - chunk_start_time
+
+        logger.info(
+            "Chunk loaded | month=%s | file=%s | chunk=%s | "
+            "rows_read=%s | rows_loaded=%s | duration_seconds=%.2f",
+            source_month,
+            csv_file.name,
+            chunk_number,
+            rows_read,
+            loaded_rows,
+            chunk_duration_seconds,
         )
 
-    return total_rows
+    file_duration_seconds = time.perf_counter() - file_start_time
+
+    logger.info(
+        "File load completed | month=%s | file=%s | "
+        "total_rows_read=%s | total_rows_loaded=%s | "
+        "duration_seconds=%.2f",
+        source_month,
+        csv_file.name,
+        total_rows_read,
+        total_rows_loaded,
+        file_duration_seconds,
+    )
+
+    return total_rows_loaded
 
 
 def load_extracted_files(input_dir: str | Path, month: str) -> None:
     input_path = Path(input_dir)
-    started_at = datetime.now()
 
-    print(f"Load started at: {started_at:%Y-%m-%d %H:%M:%S}")
+    load_start_time = time.perf_counter()
+    
+    logger.info(
+        "Monthly load started | month=%s | input_dir=%s",
+        month,
+        input_path,
+    )
 
     if not input_path.exists():
         raise FileNotFoundError(f"Input directory not found: {input_path}")
@@ -218,12 +266,15 @@ def load_extracted_files(input_dir: str | Path, month: str) -> None:
             engine=engine,
         )
 
-    finished_at = datetime.now()
-   
-    print(f"Load Finished at: {finished_at:%Y-%m-%d %H:%M:%S}")
-    print(
-        f"Load completed for {month}: "
-        f"{total_rows:,} rows in {SCHEMA_NAME}.{TABLE_NAME}"
+    load_duration_seconds = time.perf_counter() - load_start_time
+
+    logger.info(
+        "Monthly load completed | month=%s | files_processed=%s | "
+        "total_rows_loaded=%s | duration_seconds=%.2f",
+        month,
+        len(csv_files),
+        total_rows,
+        load_duration_seconds,
     )
 
 

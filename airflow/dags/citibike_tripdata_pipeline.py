@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-
+from observability import log_task_failure, log_task_retry
 from airflow.sdk import dag
 from airflow.providers.standard.operators.bash import BashOperator
 
@@ -16,9 +16,11 @@ DBT_PROJECT_DIR = "/opt/airflow/dbt"
     description="Monthly Citi Bike trip data pipeline with backfill support.",
     schedule="@monthly",
     catchup=False,
-    default_args = {
+    default_args={
         "retries": 3,
         "retry_delay": timedelta(minutes=1),
+        "on_failure_callback": log_task_failure,
+        "on_retry_callback": log_task_retry,
     },
     tags=["citibike", "batch", "postgres", "dbt", "backfill"],
 )
@@ -41,6 +43,9 @@ def citibike_tripdata_pipeline():
         task_id="extract_trips",
         bash_command=(
             "set -euo pipefail; "
+            "echo 'Starting download | "
+            "month={{ data_interval_start.strftime(\"%Y%m\") }} | "
+            "run_id={{ run_id }}'; "
             "python /opt/airflow/src/extract_trips.py "
             f"--zip-path {RAW_DIR}/{month}-citibike-tripdata.zip "
             f"--output-dir {EXTRACTED_BASE_DIR}/{month}"
@@ -75,7 +80,7 @@ def citibike_tripdata_pipeline():
             f"dbt test --project-dir {DBT_PROJECT_DIR} "
             f"--profiles-dir {DBT_PROJECT_DIR}"
         ),
-        retries=0
+        retries=0,
     )
 
     download_trips >> extract_trips >> load_trips >> dbt_run >> dbt_test
