@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 import argparse
-import requests
-from pathlib import Path
-from urllib.parse import urlparse
 import logging
-import time
+from pathlib import Path
+
+import requests
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://s3.amazonaws.com/tripdata"
 
+
 def build_tripdata_url(month: str) -> str:
     return f"{BASE_URL}/{month}-citibike-tripdata.zip"
+
 
 def download_tripdata(
     month: str,
@@ -25,12 +26,12 @@ def download_tripdata(
 
     destination = output_path / f"{month}-citibike-tripdata.zip"
 
-    logger.info("Downloading trip data for %s from %s to %s",
-                month,
-                url,
-                destination,
+    logger.info(
+        "Downloading trip data for %s from %s to %s",
+        month,
+        url,
+        destination,
     )
-    
 
     with requests.get(url, stream=True, timeout=240) as response:
         response.raise_for_status()
@@ -40,8 +41,9 @@ def download_tripdata(
                 if chunk:
                     file.write(chunk)
 
-    logger.info("File saved to: %s",
-                destination,
+    logger.info(
+        "File saved to: %s",
+        destination,
     )
 
     return destination
@@ -72,6 +74,7 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
     )
 
-    logger.info("Downloaded file: %s",
-                downloaded_file,
+    logger.info(
+        "Downloaded file: %s",
+        downloaded_file,
     )

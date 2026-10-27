@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import re
-import pandas as pd
-import logging
 import time
-
-from datetime import datetime
 from pathlib import Path
+
+import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-
 
 load_dotenv()
 
@@ -55,6 +53,7 @@ REQUIRED_COLUMNS = {
     "ended_at",
 }
 
+
 def get_engine() -> Engine:
     user = os.environ["WAREHOUSE_USER"]
     password = os.environ["WAREHOUSE_PASSWORD"]
@@ -69,6 +68,7 @@ def get_engine() -> Engine:
 def ensure_raw_schema(engine: Engine) -> None:
     with engine.begin() as connection:
         connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA_NAME};"))
+
 
 def ensure_raw_table(engine: Engine) -> None:
     create_table_sql = """
@@ -102,13 +102,13 @@ def ensure_raw_table(engine: Engine) -> None:
 
 def normalize_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
     dataframe.columns = (
-        dataframe.columns
-        .str.strip()
+        dataframe.columns.str.strip()
         .str.lower()
         .str.replace(" ", "_", regex=False)
         .str.replace("-", "_", regex=False)
     )
     return dataframe
+
 
 def validate_required_columns(df: pd.DataFrame, source_file: str) -> None:
     missing_columns = REQUIRED_COLUMNS - set(df.columns)
@@ -122,6 +122,7 @@ def validate_required_columns(df: pd.DataFrame, source_file: str) -> None:
             f"Missing mandatory columns: {missing_columns_text}. "
             f"Columns found: {available_columns_text}."
         )
+
 
 def delete_month_data(engine: Engine, month: str) -> None:
     source_month = month
@@ -141,8 +142,9 @@ def delete_month_data(engine: Engine, month: str) -> None:
             },
         )
 
-    logger.info("Existing rows removed for month %s: ",
-                month,
+    logger.info(
+        "Existing rows removed for month %s: ",
+        month,
     )
 
 
@@ -177,13 +179,12 @@ def load_csv_file(
         start=1,
     ):
         chunk_start_time = time.perf_counter()
-        
+
         rows_read = len(dataframe)
         total_rows_read += rows_read
 
         dataframe = normalize_columns(dataframe)
         validate_required_columns(dataframe, csv_file.name)
-
 
         dataframe["source_file"] = csv_file.name
         dataframe["source_month"] = source_month
@@ -235,7 +236,7 @@ def load_extracted_files(input_dir: str | Path, month: str) -> None:
     input_path = Path(input_dir)
 
     load_start_time = time.perf_counter()
-    
+
     logger.info(
         "Monthly load started | month=%s | input_dir=%s",
         month,
@@ -258,9 +259,10 @@ def load_extracted_files(input_dir: str | Path, month: str) -> None:
     total_rows = 0
 
     for csv_file in csv_files:
-        logger.info("Loading file: {%s",
-                    csv_file,
-                    )
+        logger.info(
+            "Loading file: {%s",
+            csv_file,
+        )
 
         total_rows += load_csv_file(
             csv_path=csv_file,
@@ -295,6 +297,7 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+
 def get_source_month(csv_path: Path) -> str:
     match = re.search(r"(\d{4})[-_]?(\d{2})", csv_path.name)
 
@@ -306,6 +309,7 @@ def get_source_month(csv_path: Path) -> str:
     year, month = match.groups()
 
     return f"{year}{month}"
+
 
 if __name__ == "__main__":
     args = parse_args()

@@ -1,7 +1,7 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
-from pathlib import Path
-from datetime import datetime
 
 from src.load_trips import (
     REQUIRED_COLUMNS,
@@ -45,7 +45,9 @@ def test_get_source_month_extracts_month_from_path(
 def test_validate_required_columns_accepts_complete_schema():
     dataframe = pd.DataFrame(columns=sorted(REQUIRED_COLUMNS))
 
-    result = validate_required_columns(dataframe, "data/extracted/202401/202401-citibike-tripdata_1.csv")
+    result = validate_required_columns(
+        dataframe, "data/extracted/202401/202401-citibike-tripdata_1.csv"
+    )
 
     assert result is None
 
@@ -78,9 +80,3 @@ def test_validate_required_columns_rejects_missing_columns():
     assert "member_casual" in error_message
     assert "started_at" in error_message
     assert "ended_at" in error_message
-    
-    
-   
-    
-    
-    

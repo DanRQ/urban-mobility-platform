@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from observability import log_task_failure, log_task_retry
-from airflow.sdk import dag
-from airflow.providers.standard.operators.bash import BashOperator
+from datetime import timedelta
 
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.sdk import dag
+from observability import log_task_failure, log_task_retry
 
 RAW_DIR = "/opt/airflow/data/raw"
 EXTRACTED_BASE_DIR = "/opt/airflow/data/extracted"
@@ -44,7 +44,7 @@ def citibike_tripdata_pipeline():
         bash_command=(
             "set -euo pipefail; "
             "echo 'Starting download | "
-            "month={{ data_interval_start.strftime(\"%Y%m\") }} | "
+            'month={{ data_interval_start.strftime("%Y%m") }} | '
             "run_id={{ run_id }}'; "
             "python /opt/airflow/src/extract_trips.py "
             f"--zip-path {RAW_DIR}/{month}-citibike-tripdata.zip "
@@ -53,14 +53,14 @@ def citibike_tripdata_pipeline():
     )
 
     load_trips = BashOperator(
-            task_id="load_trips",
-            bash_command=(
-                "set -euo pipefail; "
-                "python /opt/airflow/src/load_trips.py "
-                f"--input-dir {EXTRACTED_BASE_DIR}/{month} "
-                f"--month {month}"
-            ),
-        )
+        task_id="load_trips",
+        bash_command=(
+            "set -euo pipefail; "
+            "python /opt/airflow/src/load_trips.py "
+            f"--input-dir {EXTRACTED_BASE_DIR}/{month} "
+            f"--month {month}"
+        ),
+    )
 
     dbt_run = BashOperator(
         task_id="dbt_run",

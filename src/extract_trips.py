@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import argparse
 import logging
-import time
 from pathlib import Path
 from zipfile import ZipFile
 
-
 logger = logging.getLogger(__name__)
+
 
 def extract_tripdata(
     zip_path: str | Path,
@@ -28,9 +27,7 @@ def extract_tripdata(
 
     with ZipFile(source, "r") as archive:
         csv_members = [
-            member
-            for member in archive.namelist()
-            if member.lower().endswith(".csv")
+            member for member in archive.namelist() if member.lower().endswith(".csv")
         ]
 
         if not csv_members:
@@ -40,12 +37,14 @@ def extract_tripdata(
 
     extracted_files = [destination / member for member in csv_members]
 
-    logger.info(f"Extracted %s CSV file(s):",
-                len(extracted_files),
+    logger.info(
+        "Extracted %s CSV file(s):",
+        len(extracted_files),
     )
     for file_path in extracted_files:
-        logger.info("- %s",
-                    file_path,
+        logger.info(
+            "- %s",
+            file_path,
         )
 
     return extracted_files
@@ -78,6 +77,7 @@ if __name__ == "__main__":
 
     logger.info("Extraction Completed.")
     for file_path in extracted_files:
-        logger.info("Extracted file: %s",
-                    file_path,
+        logger.info(
+            "Extracted file: %s",
+            file_path,
         )
